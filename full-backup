@@ -1,0 +1,64 @@
+In this article we will see the percona xtrabackup utility tool to backup the mysql databases and table, also will see the restoration of DB's and respective tables
+
+First we will see how to take single database backup and restore it.
+
+xtrabackup --user=backup --password='password' --backup --databases=test --target-dir=$HOME/dbbackup -S /var/run/mysqld/mysqld.sock --datadir=/var/lib/mysql/
+(Note : For more than one database, specify the databases as a list, such as --databases="db1 db2 db3". The databases can also be specified in a text file and used with the option --databases-file.
+To exclude a database from the backup, use the option --databases-exclude)
+
+Prepare the backup using --export option.
+
+xtrabackup --prepare --export --target-dir=$HOME/dbbackup
+
+Now remove the tablespace of all InnoDB tables in the database using ALTER TABLE <table name> DISCARD TABLESPACE.
+
+Copy all table files from the backup dir (dbbackup/test/*) to the mysql data dir(/var/lib/mysql/test).
+Note: Before copying the files, disable selinux. After the files are copied change the ownership of the copied files to mysql user if the backup user is different.
+
+Finally, restore the tables using ALTER TABLE <table name> IMPORT TABLESPACE.
+
+Restore Single Table :
+Here we will take the backup of the sm_all_client_all_db table and restore it. The initial checksum of the table is given below:
+
+mysql> checksum table sm_all_client_all_db;
++----------------------------+------------+
+| Table                      | Checksum   |
++----------------------------+------------+
+| test.sm_all_client_all_db | 3402511688 |
++----------------------------+------------+
+
+Now we will take a backup of a single InnoDB table using the option: --tables 
+
+xtrabackup --user=backup --password='password' --backup --tables=sm_all_client_all_db  --target-dir=$HOME/dbbackup -S /var/run/mysqld/mysqld.sock --datadir=/var/lib/mysql/
+XtraBackup copies the table file sm_all_client_all_db.ibd in the backup directory (dbbacku/test) along with other files required to prepare the backup.
+
+You can also give patterns in the --tables option and XtraBackup will take backups of all tables matching the pattern. If there are many tables to be backed up, then these can be specified as a list in a text file with the option --tables-file.
+There is also an option to exclude tables using the --tables-exclude option.
+Now prepare the backup with the extra --export option. This is a special option that will prepare the table configuration.
+xtrabackup --prepare --export --target-dir=$HOME/dbbackup
+
+After preparation, the files sm_all_client_all_db.ibd and sm_all_client_all_db.cfg are available in the backup directory. To restore this table, we have to first remove the existing tablespace from the database.
+
+8.0.19>ALTER TABLE sm_all_client_all_db DISCARD TABLESPACE;
+Query OK, 0 rows affectedsm_all_client_all_db (0.20 sec)
+
+Now copy the table files from the backup directory (dbbackup/test/sm_all_client_all_db.*) to Percona Server data directory (/var/lib/mysql/test/).
+
+Note: Before copying the files, disable selinux. After the files are copied, change the ownership of the copied files to the mysql user, if the backup user is different.
+Finally, import the tablespace.
+
+
+2
+8.0.19>ALTER TABLE sbtest2 IMPORT TABLESPACE;
+Query OK, 0 rows affected (1.12 sec)
+
+The checksum of the table after the restore is:
+ mysql> checksum table sm_all_client_all_db;
++----------------------------+------------+
+| Table                      | Checksum   |
++----------------------------+------------+
+| test.sm_all_client_all_db | 3402511688 |
++----------------------------+------------+
+
+The table is restored successfully.
+
