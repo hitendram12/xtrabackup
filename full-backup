@@ -1,3 +1,6 @@
+First we need to install the xtrabackup Utility on our ubuntu server. PFB link to install 
+https://www.digitalocean.com/community/tutorials/how-to-configure-mysql-backups-with-percona-xtrabackup-on-ubuntu-16-04
+
 In this article we will see the percona xtrabackup utility tool to backup the mysql databases and table, also will see the restoration of DB's and respective tables
 
 First we will see how to take single database backup and restore it.
